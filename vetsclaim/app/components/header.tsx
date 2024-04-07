@@ -17,7 +17,7 @@ export default function Header() {
           <Image
             className="rounded-xl"
             src="/logo.png"
-            alt="Llama Logo"
+            alt="VC Logo"
             width={80}
             height={80}
             priority
