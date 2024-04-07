@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createChatEngine } from "./engine/chat";
 import { LlamaIndexStream } from "./llamaindex-stream";
 
+import { exec } from "child_process";
+
 import { FunctionTool, OpenAIAgent } from "llamaindex";
 
 import { writeFileSync } from "fs";
@@ -71,16 +73,9 @@ const convertMessageContent = (
   textMessage: string,
   imageUrl: string | undefined,
 ): MessageContent => {
-  if (textMessage.toLowerCase().includes('va form help')) { //add information about 
-
-    const agent = new OpenAIAgent({
-      systemPrompt: messages,
-      verbose: true,
-    });
-
-    // new agent to generate pdf
-    // new agent calls python script
-  } 
+  // if (textMessage.toLowerCase().includes('va form help')) { //add information about 
+  //   // call to python script to generate pdf
+  // } 
   if (!imageUrl) return textMessage;
   return [
     {
@@ -95,6 +90,19 @@ const convertMessageContent = (
     },
   ];
 };
+
+function runPythonScript(scriptPath: string, args: string[]): Promise<string> {
+  return new Promise((resolve, reject) => {
+    exec(`python ${scriptPath} ${args.join(" ")}`, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`exec error: ${error}`);
+        reject(`Error executing ${scriptPath}: ${stderr}`);
+        return;
+      }
+      resolve(stdout);
+    });
+  });
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -144,6 +152,14 @@ export async function POST(request: NextRequest) {
       data?.imageUrl,
     );
 
+    // generate pdf
+    if (userMessage.content.toLowerCase().includes('va form help')) {
+      await runPythonScript("../json_parse.py", ["argument1", "argument2"]);
+      await runPythonScript("../pdf_filler.py", []);
+      
+      console.log("PDF generation process complete.");
+    } 
+
     // Calling LlamaIndex's ChatEngine to get a streamed response
     const response2 = await chatEngine.chat({
       message: SYS + userMessageContent,
@@ -152,7 +168,7 @@ export async function POST(request: NextRequest) {
     });
 
     const history = JSON.stringify(messages);
-    const filepath = "./history.json";
+    const filepath = "../history.json";
 
     // Write the JSON string to a file
     try {
