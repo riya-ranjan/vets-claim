@@ -7,6 +7,8 @@ import { LlamaIndexStream } from "./llamaindex-stream";
 
 import { FunctionTool, OpenAIAgent } from "llamaindex";
 
+import { writeFileSync } from "fs";
+
 initObservability();
 
 export const runtime = "nodejs";
@@ -37,6 +39,7 @@ To determine if the veteran is eligible for benefits, you must ask or confirm wi
 4. When their disability began
 
 
+Do not ask the user to give you all this information at once because it may be overwhelming. Instead, ask one by one. 
 Once you have enough information to populate the VA form, you must prompt the user with the following message: 
 \"\"I believe I have enough information to help you fill out your VA Form. If you'd like to proceed, please enter the following message: "VA form help"\"\"
 
@@ -68,6 +71,16 @@ const convertMessageContent = (
   textMessage: string,
   imageUrl: string | undefined,
 ): MessageContent => {
+  if (textMessage.toLowerCase().includes('va form help')) { //add information about 
+
+    const agent = new OpenAIAgent({
+      systemPrompt: messages,
+      verbose: true,
+    });
+
+    // new agent to generate pdf
+    // new agent calls python script
+  } 
   if (!imageUrl) return textMessage;
   return [
     {
@@ -105,14 +118,14 @@ export async function POST(request: NextRequest) {
     //   verbose: true,
     // }); 
 
-    const agent = new OpenAIAgent({
-      systemPrompt: SYS,
-      verbose: true,
-    });
+    // const agent = new OpenAIAgent({
+    //   systemPrompt: SYS,
+    //   verbose: true,
+    // });
 
-    const response1 = await agent.chat({
-      message: SYS + userMessage.content,
-    });
+    // const response1 = await agent.chat({
+    //   message: SYS + userMessage.content,
+    // });
 
     // Assuming `chat` is an asynchronous method that returns a Promise.
     //const response1 = await agent.chat("prompt");
@@ -137,6 +150,17 @@ export async function POST(request: NextRequest) {
       chatHistory: messages,
       stream: true,
     });
+
+    const history = JSON.stringify(messages);
+    const filepath = "./history.json";
+
+    // Write the JSON string to a file
+    try {
+      writeFileSync(filepath, history);
+      console.log('File written successfully');
+    } catch (error) {
+      console.error('An error occurred:', error);
+    }
 
     // Transform LlamaIndex stream to Vercel/AI format
     const { stream, data: streamData } = LlamaIndexStream(response2, {
