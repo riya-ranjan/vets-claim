@@ -26,7 +26,7 @@ INSTRUCTIONS: You are an assistant helping a veteran fill out their VA Form 21-5
 3. Gather the information needed to fill out a claims form
 
 
-The following information is needed to fill out a claims form. You must ask the user for the following information:
+The following information is needed to fill out a claims form. If the user wants to fill out a claims form, you must ask the user for the following information:
 1. First name
 2. Middle initial
 3. Last name
@@ -41,11 +41,10 @@ To determine if the veteran is eligible for benefits, you must ask or confirm wi
 4. When their disability began
 
 
-Do not ask the user to give you all this information at once because it may be overwhelming. Instead, ask one by one. 
 Once you have enough information to populate the VA form, you must prompt the user with the following message: 
-\"\"I believe I have enough information to help you fill out your VA Form. If you'd like to proceed, please enter the following message: "VA form help"\"\"
+I believe I have enough information to help you fill out your VA Form. If you'd like to proceed, please enter the following message: \"VA form help\"
 
-If the user responds positive and asks for help, your next message should be: \"\"I will prepare a filled VA Form for you.\"\" You should then answer any questions the user may have about the process of filing.
+If the user responds positive and asks for help, your next message should be: I will prepare a filled VA Form for you.
 
 
 Here is a sample conversation you might have with a user named John Doe, where your responses are denoted by \"Chatbot\": 
@@ -154,8 +153,31 @@ export async function POST(request: NextRequest) {
 
     // generate pdf
     if (userMessage.content.toLowerCase().includes('va form help')) {
-      await runPythonScript("../json_parse.py", ["argument1", "argument2"]);
-      await runPythonScript("../pdf_filler.py", []);
+      exec('python3 json_parse.py', (error, stdout, stderr) => {
+        if (error) {
+          console.log(`error: ${error.message}`);
+        }
+        else if (stderr) {
+          console.log(`stderr: ${stderr}`);
+        }
+        else {
+          console.log(stdout);
+        }
+      })
+
+      // exec('python3 pdf_filler.py', (error, stdout, stderr) => {
+      //   if (error) {
+      //     console.log(`error: ${error.message}`);
+      //   }
+      //   else if (stderr) {
+      //     console.log(`stderr: ${stderr}`);
+      //   }
+      //   else {
+      //     console.log(stdout);
+      //   }
+      // })
+      // // await runPythonScript("../json_parse.py", []);
+      // // await runPythonScript("../pdf_filler.py", []);
       
       console.log("PDF generation process complete.");
     } 
@@ -168,7 +190,7 @@ export async function POST(request: NextRequest) {
     });
 
     const history = JSON.stringify(messages);
-    const filepath = "../history.json";
+    const filepath = "./history.json";
 
     // Write the JSON string to a file
     try {
